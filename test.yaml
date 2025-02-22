@@ -1,0 +1,75 @@
+---
+- hosts: localhost
+  name: Enable Minikube Ingress
+  become: yes
+  vars:
+    ansible_user: "{{ lookup('env', 'USER') }}"  # Fetch current logged-in user
+  tasks:
+    - name: Debug ansible_user
+      debug:
+        msg: "Ansible is using {{ ansible_user }} to connect to the host"
+
+    - name: Ensure Minikube is running
+      command: /usr/local/bin/minikube status
+      register: minikube_status
+      ignore_errors: true
+
+    - name: Start Minikube if it's not running
+      when: minikube_status.rc != 0
+      shell: /usr/local/bin/minikube start --driver=docker
+      async: 120  # Increase timeout if needed
+      poll: 0
+
+    - name: Wait for Minikube to start
+      local_action: wait_for
+      args:
+        host: "{{ inventory_hostname }}"
+        port: 8443
+        state: started
+        timeout: 300  # Adjust timeout as needed
+
+    - name: Debug Minikube status
+      debug:
+        msg: "Minikube status: {{ minikube_status.stdout }}"
+
+    - name: Enable Minikube ingress addon
+      shell: /usr/local/bin/minikube addons enable ingress
+      register: enable_ingress
+      ignore_errors: true
+
+    - name: Debug enable_ingress result
+      debug:
+        var: enable_ingress
+
+    - name: Check Minikube logs for errors
+      shell: /usr/local/bin/minikube  logs --file=logs.txt
+      args:
+        chdir: /tmp
+      register: minikube_logs
+      failed_when: "minikube_logs.rc != 0 and 'No logs available' not in minikube_logs.stderr"
+
+    - name: Debug Minikube logs
+      debug:
+        msg: "Minikube logs: {{ minikube_logs.stdout }}"
+
+    - name: Fail task if enabling ingress failed
+      fail:
+        msg: "Failed to enable Minikube ingress addon"
+      when: enable_ingress.rc != 0
+
+    - name: Debug current user
+      debug:
+        msg: "Current user is {{ ansible_user }}"
+
+
+            - name: Echo trimmed username
+      shell: echo "{{ ansible_user }}"
+      register: trimmed_username_output
+
+    - name: Debug trimmed username
+      debug:
+        msg: "Trimmed username: {{ trimmed_username_output.stdout }}"
+
+    - name: Debug current user
+      debug:
+        msg: "Current user is {{ ansible_user }}"

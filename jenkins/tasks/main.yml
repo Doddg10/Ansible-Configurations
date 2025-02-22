@@ -1,0 +1,90 @@
+# tasks file for jenkins
+- name: Update apt repositories
+  apt:
+    update_cache: yes
+
+# - name: Install Java
+#   apt:
+#     name: 
+#       - fontconfig
+#       - openjdk-17-jdk
+#     state: present
+
+# - name: Add Jenkins repository key to the system
+#   get_url:
+#     url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+#     dest: "/usr/share/keyrings/jenkins-keyring.asc"
+#     mode: "0644"
+
+# - name: Append Jenkins repository to sources.list
+#   apt_repository:
+#     repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/"
+#     state: present
+#     filename: jenkins
+
+# - name: Update apt repositories
+#   apt:
+#     update_cache: yes
+
+# - name: Install Jenkins
+#   apt:
+#     name: jenkins
+#     state: present
+
+# - name: Check Jenkins service status
+#   service:
+#     name: jenkins
+#     state: started
+#     enabled: yes
+
+# Configure NGINX
+- name: Install NGINX
+  apt:
+    name: nginx
+    state: present
+
+- name: Configure NGINX to serve as a reverse proxy for Jenkins
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/default
+  notify: Reload NGINX
+
+- name: Create SSL directory if it doesn't exist
+  file:
+    path: /etc/ssl/private
+    state: directory
+    mode: '0700'
+  check_mode: no
+
+- name: Generate private key
+  openssl_privatekey:
+    path: /etc/ssl/private/nginx.key
+    size: 2048
+
+- name: Generate CSR
+  openssl_csr:
+    path: /etc/ssl/certs/nginx.csr
+    privatekey_path: /etc/ssl/private/nginx.key
+    common_name: "doaa.iti.com"  
+
+- name: Generate self-signed SSL certificate
+  openssl_certificate:
+    path: /etc/ssl/certs/nginx.crt
+    privatekey_path: /etc/ssl/private/nginx.key
+    csr_path: /etc/ssl/certs/nginx.csr
+    provider: selfsigned
+
+- name: Enable SSL configuration in NGINX
+  file:
+    src: "/etc/nginx/sites-available/default"
+    dest: "/etc/nginx/sites-enabled/default"
+    state: link
+    force: yes
+  notify: Reload NGINX
+
+
+# Reload NGINX configuration
+- name: Reload NGINX
+  service:
+    name: nginx
+    state: reloaded

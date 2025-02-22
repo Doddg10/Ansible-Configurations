@@ -1,0 +1,35 @@
+---
+- hosts: node
+  name: task2 playbook
+  remote_user: ubuntu
+  become: yes
+  vars:
+    # name: Doaa2
+    
+
+  tasks:
+    - name: create developers group
+      group:
+         name: developers
+         state: present
+
+    - name: create devops group
+      group:
+         name: devops
+         state: present
+
+    - name: create users
+      user: 
+        name: "{{ item.name }}"
+        state: present
+        groups: "{{ item.groups }}"
+        expires: "{{ item.expires }}"
+        createhome: yes
+      with_items:
+        - { name: 'user1', groups: 'developers', expires: '1938988800' }
+        - { name: 'user2', groups: 'devops', expires: '1938988800' }
+
+    - name: generate ssh for user1
+      user:
+        name: user1
+        generate_ssh_key: yes

@@ -1,0 +1,52 @@
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+
+- name: Install Java OpenJDK 8
+  apt:
+    name: openjdk-8-jdk
+    state: present
+
+- name: Download Nexus Repository Manager tar.gz file
+  get_url:
+    url: "https://download.sonatype.com/nexus/3/latest-unix.tar.gz"
+    dest: "/tmp/nexus.tar.gz"
+
+- name: Extract Nexus tar.gz file
+  unarchive:
+    src: "/tmp/nexus.tar.gz"
+    dest: "/opt/"
+    remote_src: yes
+
+- name: Rename Nexus directory
+  file:
+    src: "{{ item }}"
+    dest: /opt/nexus
+    state: link
+    force: yes
+  with_fileglob:
+    - "/opt/nexus-*"
+
+- name: Add nexus user
+  user:
+    name: nexus
+    state: present
+
+- name: Set ownership of Nexus directory
+  file:
+    path: "/opt/nexus"
+    owner: nexus
+    group: nexus
+    recurse: yes
+
+- name: Copy Nexus systemd service file
+  copy:
+    src: files/nexus.service
+    dest: /etc/systemd/system/nexus.service
+  notify:
+    - Reload systemd
+
+- name: Start Nexus service
+  systemd:
+    name: nexus
+    state: started

@@ -1,0 +1,14 @@
+- hosts: all
+  name: Install Jenkins and Nexus through roles
+  remote_user: ubuntu
+  become: yes
+
+  roles:
+    - jenkins
+    # - nexus
+
+  handlers:
+    - name: Reload NGINX
+      service:
+        name: nginx
+        state: reloaded

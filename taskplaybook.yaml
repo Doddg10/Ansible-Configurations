@@ -1,0 +1,28 @@
+---
+- hosts: all
+  name: nginx task playbook
+  remote_user: ubuntu
+  become: yes
+  vars:
+    name: Task1
+
+  tasks:
+    - name: install nginx
+      apt:
+         name: nginx
+         state: present
+      # when: ansible_facts["distribution"] == "Ubuntu"
+    - name: check nginx is running
+      service: 
+          name: nginx
+          state: started
+    - name: use template module
+      template: 
+          src: index.html
+          dest: /var/www/html/index.nginx-debian.html
+    - name: restart nginx
+      service:
+          name: nginx 
+          state: restarted
+
+

@@ -1,0 +1,56 @@
+---
+- hosts: all
+  name: ngingx playbook
+  remote_user: ubuntu
+  become: yes
+  vars:
+    folder_name: iti44
+    # name: Doaa
+    flag: false
+  handlers:
+  
+  # vars_prompt:
+  #   - name: "some_password"
+  #     prompt: "Enter password"
+  #     private: yes
+
+  tasks:
+    - name: install nginx
+      apt:
+         name: nginx
+         state: present
+      # when: ansible_facts["distribution"] == "Ubuntu"
+    - name: check ngingx is running
+      service: 
+          name: nginx
+          state: started
+      when:
+        - (flag==true)
+    - name: create dir using variable
+      file: 
+          path: "{{folder_name}}"   
+          state: directory  
+    - name: run ls command
+      command: "ls"
+      register: ls_output
+    - name: print the regiseterd variable
+      debug:
+          var: ls_output.stdout
+    - name: copy file from my laptop to ec2 instance
+      copy: 
+          src: Doaa
+          dest: ~/Doaa
+    - name: use template module
+      template: 
+          src: mytemplate
+          dest: hello
+    - name: create users
+      user: 
+          name: "{{ item }}"
+          state: present
+      with_items:
+        - doaa
+        - rahmoza
+        - goga
+
+

@@ -1,0 +1,7 @@
+install nginx 
+create html template
+make that html page the default page of nginx
+open the link to see that page
+--------------------
+create 5 users on the machine with their home users 
+change the permissions
